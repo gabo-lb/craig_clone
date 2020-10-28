@@ -6,6 +6,7 @@ from . import models
 
 
 BASE_CRAIGSLIST_URL = 'https://losangeles.craigslist.org/search/hhh?query={}'
+BASE_IMAGE_URL = 'https://images.craigslist.org/{}_300x300.jpg'
 
 # Create your views here.
 
@@ -20,7 +21,6 @@ def new_search(request):
     response = requests.get(final_url)
     data = response.text
     soup = BeautifulSoup(data, features='html.parser')
-    print("soup is {}".format(type(soup)))
 
     post_listings = soup.find_all('li', {'class': 'result-row'})
 
@@ -28,7 +28,6 @@ def new_search(request):
 
     for post in post_listings:
         post_title = post.find(class_='result-title').text
-        print('post title: {}'.format(post_title))
         post_url = post.find('a').get('href')
         post_price = post.find(class_='result-price').text
 
@@ -37,8 +36,14 @@ def new_search(request):
         else:
             post_price = 'N/A'
 
-        final_postings.append((post_title, post_url, post_price))
-    print(final_postings)
+        if post.find(class_='result-image').get('data-ids'):
+            post_image_id = post.find(class_='result-image').get('data-ids').split(',')[0].split(':')[1]
+            post_image_url = BASE_IMAGE_URL.format(post_image_id)
+        else:
+            post_image_url = 'https://craigslist.org/images/peace.jpg'
+
+        final_postings.append((post_title, post_url, post_price, post_image_url))
+
     stuff_for_fronend = {
         'search' : search,
         'final_postings' : final_postings,
